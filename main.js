@@ -43,13 +43,18 @@ function execute(){
     while(done==0){
       done=1;
       try{
-        code = eval(expression);
+        code = eval(code);
       }catch(err){
+        console.log(code)
         done=0;
         for(let variable of variables){
           while(code.includes(variable)){
             code = `${code.substring(0,code.search(variable))}${values[variables.indexOf(variable)]}${code.substring(code.search(variable)+variable.length,code.length)}`
           }
+        }
+        if(code[0]=='"' && code[code.length-1]=='"'){
+          done=1;
+          code=code.substring(1,code.length-1);
         }
       }
     }
@@ -80,6 +85,9 @@ function execute(){
         values=container[1];
       }
     }
+    if(lines[j].search("DISPLAY")==0 && lines[j][lines[j].length-1]==")" && lines[j][7]=="("){
+      document.getElementById("output").innerHTML+=`<br/>${simplify(lines[j].substring(8,lines[j][lines[j].length-1]))}`;
+    }
   }
-  console.log(values)
+  console.log(variables);
 }
