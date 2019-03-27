@@ -58,14 +58,14 @@ function execute(){
         inputDone=0;
         while(inputDone==0){
           inputDone=1;
-          if(code.includes("INPUT") && code[code.search("INPUT")+5]=="(" && !(code.substring(0,code.search("INPUT").includes('"'))) && !(code.substring(code.search("INPUT")+6,code.length-1).includes('"')) && manualSearch(code,")")!=-1){
-            let answer = prompt(code.substring(manualSearch(code,"INPUT(")+6,manualSearch(code,")")));
-            if(Number.isNaN(answer)){
-              answer=`"${answer}"`;
+          if(code.includes("INPUT()") && !(code.substring(0,code.search("INPUT")).includes('"')) && !(code.substring(code.search("INPUT")+6,code.length-1).includes('"'))){
+            let answer = prompt("Enter a value:");
+            if(isNaN(answer)){
+              answer='"'+answer+'"';
             }
-            code=`${code.substring(0,code.search("INPUT"))}${answer}${code.substring(manualSearch(code,")")+1,code.length)}`
+            code=`${code.substring(0,code.search("INPUT()"))}${answer}${code.substring(code.search("INPUT()")+7,code.length)}`
           }
-          if(code.includes("INPUT") && code[code.search("INPUT")+5]=="(" && !(code.substring(0,code.search("INPUT").includes('"'))) && !(code.substring(code.search("INPUT")+6,code.length-1).includes('"')) && manualSearch(code,")")!=-1){
+          if(code.includes("INPUT()") && !(code.substring(0,code.search("INPUT")).includes('"')) && !(code.substring(code.search("INPUT")+6,code.length-1).includes('"'))){
             inputDone=0;
           }
         }
