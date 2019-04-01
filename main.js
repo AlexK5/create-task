@@ -102,7 +102,7 @@ function execute(){
   for(let j = 0; j<lines.length; j++){
     if(lines[j].includes("&lt;--")){
       if(variables.includes(lines[j].substring(0,lines[j].search("&lt;--")))){
-        values[variables.indexOf(lines[j].substring(0,lines[j].search("&lt;--")))]=lines[j].substring(simplify(lines[j].search("&lt;--")+6,lines[j].length));
+        values[variables.indexOf(lines[j].substring(0,lines[j].search("&lt;--")))]=simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length));
       }else{
         variables.push(lines[j].substring(0,lines[j].search("&lt;--")));
         values.push(simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length)));
