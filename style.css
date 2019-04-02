@@ -1,30 +1,30 @@
 .button {
-background-color: #4CAF50; /* Green */
+background-color: #228b22;
   border: none;
   color: white;
   padding: 15px 32px;
   text-align: center;
-  text-decoration: none;
   display: inline-block;
-  font-size: 16px;
+  font-size: 20px;
   margin: 4px 2px;
   cursor: pointer;
-  align: center;
-
 }
 body{
-  background-color: cyan;
+  background-color: #bcd7ff;
 }
-div{
+div.output{
 height:500px;
 width: auto;
-border: 300px;
+border: 3px;
 border-color: black;
 font-size: 20px;
 overflow: auto;
-
 }
-.title {font-size: 16px;
-
+.title {
+  font-size: 20px;
   text-align: center;
+}
+html{
+ font-weight: bold;
+ font-size: 20px;
 }
