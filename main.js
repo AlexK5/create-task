@@ -55,6 +55,19 @@ function execute(){
         code = eval(code);
       }catch(err){
         done=0;
+        randomDone=0;
+        while(randomDone==0){
+          randomDone=1;
+          if(code.includes("RANDOM") && code[code.search("RANDOM")+6]=="(" && manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")!=-1 && !(code.substring(0,code.search("RANDOM")).includes('"')) && !(code.substring(code.search("RANDOM")+7,code.length-1).includes('"'))){
+            let minimum = Number(code.substring(code.search("RANDOM")+7,code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(",")))
+            let maximum = Number(code.substring(code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(",")+1,code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")))
+            let num = Math.floor(Math.random()*(maximum-minimum+1)+minimum)
+            code=`${code.substring(0,code.search("RANDOM"))}${num}${code.substring(code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")"),code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")"))}`
+          }
+          if(code.includes("RANDOM") && code[code.search("RANDOM")+6]=="(" && manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")!=-1 && !(code.substring(0,code.search("RANDOM")).includes('"')) && !(code.substring(code.search("RANDOM")+7,code.length-1).includes('"'))){
+            randomDone=0;
+          }
+        }
         inputDone=0;
         while(inputDone==0){
           inputDone=1;
