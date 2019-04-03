@@ -62,7 +62,7 @@ function execute(){
             let minimum = Number(code.substring(code.search("RANDOM")+7,code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(",")))
             let maximum = Number(code.substring(code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(",")+1,code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")))
             let num = Math.floor(Math.random()*(maximum-minimum+1)+minimum)
-            code=`${code.substring(0,code.search("RANDOM"))}${num}${code.substring(code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")"),code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")"))}`
+            code=`${code.substring(0,code.search("RANDOM"))}${num}${code.substring(code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")+1,code.length)}`
           }
           if(code.includes("RANDOM") && code[code.search("RANDOM")+6]=="(" && manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")!=-1 && !(code.substring(0,code.search("RANDOM")).includes('"')) && !(code.substring(code.search("RANDOM")+7,code.length-1).includes('"'))){
             randomDone=0;
@@ -80,6 +80,18 @@ function execute(){
           }
           if(code.includes("INPUT()") && !(code.substring(0,code.search("INPUT")).includes('"')) && !(code.substring(code.search("INPUT")+6,code.length-1).includes('"'))){
             inputDone=0;
+          }
+        }
+        if(code.includes("MOD")){
+          modDone=0;
+          while(modDone==0){
+            modDone=1;
+            if(code.includes("MOD") && !(code.substring(0,code.search("MOD")).includes('"')) && !(code.substring(code.search("MOD")+3,code.length-1).includes('"'))){
+              code=`${code.substring(0,code.search("MOD"))}%${code.substring(code.search("MOD")+3,code.length)}`
+            }
+            if(code.includes("MOD") && !(code.substring(0,code.search("MOD")).includes('"')) && !(code.substring(code.search("MOD")+4,code.length-1).includes('"'))){
+              modDone=0;
+            }
           }
         }
         for(let variable of variables){
