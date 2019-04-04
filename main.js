@@ -111,6 +111,29 @@ function execute(){
     }
     return(code);
   }
+  function makeList(){
+    let listString=`,${lines[j].substring(lines[j].search("&lt;--")+7,lines[j].length-1)}`;
+    let listItems=[];
+    let quoteCount=0;
+    let varsMade=[];
+    let valuesMade=[];
+    for(let i = 0; i<listString.length;i++){
+      if(listString[i]=='"'){
+        quoteCount++;
+      }
+      if(listString[i]=="," && quoteCount%2==0){
+        listItems.push("");
+      }else{
+        listItems[listItems.length-1]=`${listItems[listItems.length-1]}${listString[i]}`
+      }
+    }
+    let varName=lines[j].substring(0,lines[j].search("&lt;--"));
+    for(let i = 0; i<listItems.length;i++){
+      varsMade.push(`${varName}[${i+1}]`)
+      valuesMade.push(simplify(String(listItems[i])))
+    }
+    return([varsMade,valuesMade])
+  }
   let p=document.getElementById("code").innerHTML;
   let lines=[];
   let j=0;
@@ -129,8 +152,19 @@ function execute(){
       if(variables.includes(lines[j].substring(0,lines[j].search("&lt;--")))){
         values[variables.indexOf(lines[j].substring(0,lines[j].search("&lt;--")))]=simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length));
       }else{
-        variables.push(lines[j].substring(0,lines[j].search("&lt;--")));
-        values.push(simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length)));
+        if(lines[j][lines[j].search("&lt;--")+6]=="[" && lines[j][lines[j].length-1]=="]" && !(lines[j].substring(0,lines[j].search("&")).includes("[") && lines[j].substring(0,lines[j].search("&")).includes("]"))){
+          for(let item of makeList()[0]){
+            variables.push(item)
+          }
+          for(let item of makeList()[1]){
+            values.push(item)
+          }
+          console.log(variables)
+          console.log(values)
+        }else{
+          variables.push(lines[j].substring(0,lines[j].search("&lt;--")));
+          values.push(simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length)));
+        }
         let container=lengthSort(variables,values);
         variables=container[0];
         values=container[1];
