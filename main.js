@@ -2,6 +2,7 @@ function execute(){
   document.getElementById("output").innerHTML="";
   let variables = [];
   let values = [];
+  let lists = [];
   function eliminateSpaces(row){
     let line = row;
     let i = 0;
@@ -49,7 +50,9 @@ function execute(){
   function simplify(expression){
     let code = expression;
     let done = 0;
-    while(done==0){
+    iters=0;
+    while(done==0 && iters<100){
+      //iters++;
       done=1;
       try{
         code = eval(code);
@@ -99,7 +102,7 @@ function execute(){
             if(typeof(values[variables.indexOf(variable)])=="string" && (values[variables.indexOf(variable)][0]!='"' || values[variables.indexOf(variable)][values[variables.indexOf(variable)].length]!='"')){
               code = `${code.substring(0,code.search(variable))}"${values[variables.indexOf(variable)]}"${code.substring(code.search(variable)+variable.length,code.length)}`
             }else{
-              code = `${code.substring(0,code.search(variable))}${values[variables.indexOf(variable)]}${code.substring(code.search(variable)+variable.length,code.length)}`
+              code = `${code.substring(0,code.search(variable))}${values[variables.indexOf(variable)]}${code.substring(manualSearch(code,variable)+variable.length,code.length)}`
             }
           }
         }
@@ -115,13 +118,20 @@ function execute(){
     let listString=`,${lines[j].substring(lines[j].search("&lt;--")+7,lines[j].length-1)}`;
     let listItems=[];
     let quoteCount=0;
+    let parenthesesCount=0;
     let varsMade=[];
     let valuesMade=[];
     for(let i = 0; i<listString.length;i++){
       if(listString[i]=='"'){
         quoteCount++;
       }
-      if(listString[i]=="," && quoteCount%2==0){
+      if(listString[i]=="("){
+        parenthesesCount++;
+      }
+      if(listString[i]==")"){
+        parenthesesCount--;
+      }
+      if(listString[i]=="," && quoteCount%2==0 && parenthesesCount==0){
         listItems.push("");
       }else{
         listItems[listItems.length-1]=`${listItems[listItems.length-1]}${listString[i]}`
@@ -154,10 +164,11 @@ function execute(){
           let newVars=[];
           let newValues=[];
           let listName=lines[j].substring(0,lines[j].search("&lt;--"));
-          for(let item of makeList()[0]){
+          let madeList=makeList();
+          for(let item of madeList[0]){
             newVars.push(item)
           }
-          for(let item of makeList()[1]){
+          for(let item of madeList[1]){
             newValues.push(item)
           }
           let i = 0;
@@ -179,19 +190,36 @@ function execute(){
           let container=lengthSort(variables,values);
           variables=container[0];
           values=container[1];
+          if(!(lists.includes(listName))){
+            lists.push(listName);
+          }
         }else{
+          if(lists.includes(lines[j].substring(0,lines[j].search("&lt;--")))){
+            lists.splice(lists.indexOf(lines[j].substring(0,lines[j].search("&lt;--"))),1)
+            let i = 0;
+            while(i<variables.length){
+              if(variables[i].search(lines[j].substring(0,lines[j].search("&lt;--")))==0 && variables[i][lines[j].substring(0,lines[j].search("&lt;--")).length]=="[" && variables[i][variables[i].length-1]=="]"){
+                variables.splice(i,1);
+                values.splice(i,1);
+              }else{
+                i++;
+              }
+            }
+          }
           values[variables.indexOf(lines[j].substring(0,lines[j].search("&lt;--")))]=simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length));
         }
       }else{
         if(lines[j][lines[j].search("&lt;--")+6]=="[" && lines[j][lines[j].length-1]=="]"){
-          for(let item of makeList()[0]){
+          let madeList=makeList()
+          for(let item of madeList[0]){
             variables.push(item)
           }
-          for(let item of makeList()[1]){
+          for(let item of madeList[1]){
             values.push(item)
           }
           variables.push(lines[j].substring(0,lines[j].search("&lt;--")));
           values.push(simplify(`"${lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length)}"`));
+          lists.push(lines[j].substring(0,lines[j].search("&lt;--")));
         }else{
           variables.push(lines[j].substring(0,lines[j].search("&lt;--")));
           values.push(simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length)));
@@ -204,5 +232,22 @@ function execute(){
     if(lines[j].search("DISPLAY")==0 && lines[j][lines[j].length-1]==")" && lines[j][7]=="("){
       document.getElementById("output").innerHTML+=`<br/>${simplify(lines[j].substring(8,lines[j].length-1))}`;
     }
+    for(let list of lists){
+      let items = [];
+      let included = 1;
+      let i = 1;
+      while(included==1){
+        if(variables.includes(`${list}[${i}]`)){
+          items.push(values[variables.indexOf(`${list}[${i}]`)]);
+          i++;
+        }else{
+          included=0;
+        }
+      }
+      values[variables.indexOf(list)]=`[${items}]`
+    }
   }
+  // console.log(variables)
+  // console.log(values)
+  // console.log(lists)
 }
