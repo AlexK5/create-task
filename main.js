@@ -100,9 +100,9 @@ function execute(){
         for(let variable of variables){
           while(code.includes(variable)){
             if(typeof(values[variables.indexOf(variable)])=="string" && (values[variables.indexOf(variable)][0]!='"' || values[variables.indexOf(variable)][values[variables.indexOf(variable)].length]!='"')){
-              code = `${code.substring(0,code.search(variable))}"${values[variables.indexOf(variable)]}"${code.substring(code.search(variable)+variable.length,code.length)}`
+              code = `${code.substring(0,manualSearch(code,variable))}"${values[variables.indexOf(variable)]}"${code.substring(code.search(variable)+variable.length,code.length)}`
             }else{
-              code = `${code.substring(0,code.search(variable))}${values[variables.indexOf(variable)]}${code.substring(manualSearch(code,variable)+variable.length,code.length)}`
+              code = `${code.substring(0,manualSearch(code,variable))}${values[variables.indexOf(variable)]}${code.substring(manualSearch(code,variable)+variable.length,code.length)}`
             }
           }
         }
@@ -131,6 +131,12 @@ function execute(){
       if(listString[i]==")"){
         parenthesesCount--;
       }
+      if(listString[i]=="[" && quoteCount%2==0){
+        listString=`${listString.substring(0,manualSearch(listString,"["))}|${listString.substring(manualSearch(listString,"[")+1,listString.length)}`;
+      }
+      if(listString[i]=="]" && quoteCount%2==0){
+        listString=`${listString.substring(0,manualSearch(listString,"["))}~${listString.substring(manualSearch(listString,"[")+1,listString.length)}`;
+      }
       if(listString[i]=="," && quoteCount%2==0 && parenthesesCount==0){
         listItems.push("");
       }else{
@@ -138,6 +144,11 @@ function execute(){
       }
     }
     let varName=lines[j].substring(0,lines[j].search("&lt;--"));
+    for(let i = 0; i<listString[i].length; i++){
+      while(manualSearch(listItems[i],"|")!=-1 && manualSearch(listItems[i],"~")!=-1){
+        listItems[i]=`${listItems[i].substring(0,manualSearch(listItems[i],"|"))}[${simplify(listItems[i].substring(manualSearch(listItems[i],"|")+1,manualSearch(listItems[i],"~")))}]${listItems[i].substring(manualSearch(listItems[i],"~")+1,listItems[i].length)}`
+      }
+    }
     for(let i = 0; i<listItems.length;i++){
       varsMade.push(`${varName}[${i+1}]`)
       valuesMade.push(simplify(String(listItems[i])))
@@ -158,9 +169,11 @@ function execute(){
     lines[j] = eliminateSpaces(lines[j]);
   }
   for(var j = 0; j<lines.length; j++){
+    let listAssign = 0;
     if(lines[j].includes("&lt;--")){
       if(variables.includes(lines[j].substring(0,lines[j].search("&lt;--")))){
         if(lines[j][lines[j].search("&lt;--")+6]=="[" && lines[j][lines[j].length-1]=="]"){
+          listAssign = 1;
           let newVars=[];
           let newValues=[];
           let listName=lines[j].substring(0,lines[j].search("&lt;--"));
@@ -210,6 +223,7 @@ function execute(){
         }
       }else{
         if(lines[j][lines[j].search("&lt;--")+6]=="[" && lines[j][lines[j].length-1]=="]"){
+          listAssign = 1;
           let madeList=makeList()
           for(let item of madeList[0]){
             variables.push(item)
@@ -229,8 +243,9 @@ function execute(){
         values=container[1];
       }
     }
+    //if(manualSearch(lines[j],"[")!=-1 && manualSearch(lines[j],"]")!=-1 && listAssign==0)
     if(lines[j].search("DISPLAY")==0 && lines[j][lines[j].length-1]==")" && lines[j][7]=="("){
-      document.getElementById("output").innerHTML+=`<br/>${simplify(lines[j].substring(8,lines[j].length-1))}`;
+      document.getElementById("output").innerHTML+=`${simplify(lines[j].substring(8,lines[j].length-1))} `;
     }
     for(let list of lists){
       let items = [];
