@@ -1,4 +1,4 @@
-function execute(){
+function execute() {
   document.getElementById("output").innerHTML="";
   let variables = [];
   let values = [];
@@ -39,13 +39,38 @@ function execute(){
     }
     return([items,items2])
   }
-  function manualSearch(expression,words){
+  function manualSearch(expression,words,orderNum){
+    let order = 1
+    if(isNaN(orderNum)==false){
+      order = orderNum;
+    }
+    count=0;
     for(let i = 0; i<expression.length; i++){
+      if(expression.substring(i,i+words.length)==words){
+        count++;
+        if(count==order){
+          return(i);
+        }
+      }
+    }
+    return(-1);
+  }
+  function backSearch(expression,words){
+    for(let i = expression.length-1; i>=0; i--){
       if(expression.substring(i,i+words.length)==words){
         return(i);
       }
     }
     return(-1);
+  }
+  function getMax(array){
+    let max = array[0];
+    for(let item of array){
+      if(item>max){
+        max=item;
+      }
+    }
+    return(max);
   }
   function simplify(expression){
     let code = expression;
@@ -121,6 +146,9 @@ function execute(){
     let parenthesesCount=0;
     let varsMade=[];
     let valuesMade=[];
+    let layer = 0;
+    let rlayers = [];
+    let llayers = [];
     for(let i = 0; i<listString.length;i++){
       if(listString[i]=='"'){
         quoteCount++;
@@ -132,10 +160,12 @@ function execute(){
         parenthesesCount--;
       }
       if(listString[i]=="[" && quoteCount%2==0){
-        listString=`${listString.substring(0,manualSearch(listString,"["))}|${listString.substring(manualSearch(listString,"[")+1,listString.length)}`;
+        layer++;
+        rlayers.push(layer)
       }
       if(listString[i]=="]" && quoteCount%2==0){
-        listString=`${listString.substring(0,manualSearch(listString,"["))}~${listString.substring(manualSearch(listString,"[")+1,listString.length)}`;
+        llayers.push(layer)
+        layer--;
       }
       if(listString[i]=="," && quoteCount%2==0 && parenthesesCount==0){
         listItems.push("");
@@ -144,9 +174,40 @@ function execute(){
       }
     }
     let varName=lines[j].substring(0,lines[j].search("&lt;--"));
-    for(let i = 0; i<listString[i].length; i++){
-      while(manualSearch(listItems[i],"|")!=-1 && manualSearch(listItems[i],"~")!=-1){
-        listItems[i]=`${listItems[i].substring(0,manualSearch(listItems[i],"|"))}[${simplify(listItems[i].substring(manualSearch(listItems[i],"|")+1,manualSearch(listItems[i],"~")))}]${listItems[i].substring(manualSearch(listItems[i],"~")+1,listItems[i].length)}`
+    for(let i = 0; i<listItems.length; i++){
+      let prevr;
+      let prevl;
+      let prevList = true;
+      while((manualSearch(listItems[i],"[")!=-1 || manualSearch(listItems[i],"]")!=-1) && !(listItems[i][0]=='"' && listItems[i][listItems[i].length-1]=='"') && !(variables.includes(listItems[i]))){
+        if(prevList==false){
+          listString=listItems[i];
+          layer=0;
+          llayers=[];
+          rlayers=[];
+          for(let k = 0; k<listString.length; k++){
+            if(listString[k]=="["){
+              layer++;
+              rlayers.push(layer);
+            }
+            if(listString[k]=="]"){
+              llayers.push(layer);
+              layer--;
+            }
+          }
+        }
+        let rmax = rlayers.indexOf(getMax(rlayers))+1;
+        let lmax = llayers.indexOf(getMax(llayers))+1;
+        prevList=listItems[i]
+        listItems[i]=`${listItems[i].substring(0,manualSearch(listItems[i],"[",rmax))}[${simplify(listItems[i].substring(manualSearch(listItems[i],"[",rmax)+1,manualSearch(listItems[i],"]",lmax)))}]${listItems[i].substring(manualSearch(listItems[i],"]",lmax)+1,listItems[i].length)}`
+        if(listItems[i]==prevList){
+          prevList=true;
+        }else{
+          prevList=false;
+        }
+        rlayers[rmax-1]=0;
+        llayers[lmax-1]=0;
+        prevr = rmax;
+        prevl = lmax;
       }
     }
     for(let i = 0; i<listItems.length;i++){
