@@ -122,6 +122,16 @@ function execute() {
             }
           }
         }
+        for(let list of lists){
+          let count = 0;
+          let fakes=[];
+          while(manualSearch(code,`${list}[`,count+1)!=-1){
+            count++;
+            if(code.substring(0,manualSearch(code,`${list}[`,count)).includes('"') && code.substring(manualSearch(code,`${list}[`,count)+1,code.length).includes('"')){
+              fakes.push(count);
+            }
+          }
+        }
         for(let variable of variables){
           while(code.includes(variable)){
             if(typeof(values[variables.indexOf(variable)])=="string" && (values[variables.indexOf(variable)][0]!='"' || values[variables.indexOf(variable)][values[variables.indexOf(variable)].length]!='"')){
@@ -138,6 +148,47 @@ function execute() {
       }
     }
     return(code);
+  }
+  function makeBracket(item){
+    let listItems=item
+    let prevr;
+    let prevl;
+    let prevList = false;
+    while((manualSearch(listItems,"[")!=-1 || manualSearch(listItems,"]")!=-1) && !(listItems[0]=='"' && listItems[listItems.length-1]=='"') && !(variables.includes(listItems))){
+      if(prevList==false){
+        listString=listItems;
+        layer=0;
+        llayers=[];
+        rlayers=[];
+        for(let k = 0; k<listString.length; k++){
+          if(listString[k]=="["){
+            layer++;
+            rlayers.push(layer);
+          }
+          if(listString[k]=="]"){
+            llayers.push(layer);
+            layer--;
+          }
+        }
+      }
+      console.log(rlayers)
+      console.log(llayers)
+      console.log(listItems)
+      let rmax = rlayers.indexOf(getMax(rlayers))+1;
+      let lmax = llayers.indexOf(getMax(llayers))+1;
+      prevList=listItems
+      listItems=`${listItems.substring(0,manualSearch(listItems,"[",rmax))}[${simplify(listItems.substring(manualSearch(listItems,"[",rmax)+1,manualSearch(listItems,"]",lmax)))}]${listItems.substring(manualSearch(listItems,"]",lmax)+1,listItems.length)}`
+      if(listItems==prevList){
+        prevList=true;
+      }else{
+        prevList=false;
+      }
+      rlayers[rmax-1]=0;
+      llayers[lmax-1]=0;
+      prevr = rmax;
+      prevl = lmax;
+    }
+    return(listItems)
   }
   function makeList(){
     let listString=`,${lines[j].substring(lines[j].search("&lt;--")+7,lines[j].length-1)}`;
@@ -159,14 +210,6 @@ function execute() {
       if(listString[i]==")"){
         parenthesesCount--;
       }
-      if(listString[i]=="[" && quoteCount%2==0){
-        layer++;
-        rlayers.push(layer)
-      }
-      if(listString[i]=="]" && quoteCount%2==0){
-        llayers.push(layer)
-        layer--;
-      }
       if(listString[i]=="," && quoteCount%2==0 && parenthesesCount==0){
         listItems.push("");
       }else{
@@ -175,43 +218,11 @@ function execute() {
     }
     let varName=lines[j].substring(0,lines[j].search("&lt;--"));
     for(let i = 0; i<listItems.length; i++){
-      let prevr;
-      let prevl;
-      let prevList = true;
-      while((manualSearch(listItems[i],"[")!=-1 || manualSearch(listItems[i],"]")!=-1) && !(listItems[i][0]=='"' && listItems[i][listItems[i].length-1]=='"') && !(variables.includes(listItems[i]))){
-        if(prevList==false){
-          listString=listItems[i];
-          layer=0;
-          llayers=[];
-          rlayers=[];
-          for(let k = 0; k<listString.length; k++){
-            if(listString[k]=="["){
-              layer++;
-              rlayers.push(layer);
-            }
-            if(listString[k]=="]"){
-              llayers.push(layer);
-              layer--;
-            }
-          }
-        }
-        let rmax = rlayers.indexOf(getMax(rlayers))+1;
-        let lmax = llayers.indexOf(getMax(llayers))+1;
-        prevList=listItems[i]
-        listItems[i]=`${listItems[i].substring(0,manualSearch(listItems[i],"[",rmax))}[${simplify(listItems[i].substring(manualSearch(listItems[i],"[",rmax)+1,manualSearch(listItems[i],"]",lmax)))}]${listItems[i].substring(manualSearch(listItems[i],"]",lmax)+1,listItems[i].length)}`
-        if(listItems[i]==prevList){
-          prevList=true;
-        }else{
-          prevList=false;
-        }
-        rlayers[rmax-1]=0;
-        llayers[lmax-1]=0;
-        prevr = rmax;
-        prevl = lmax;
-      }
+      listItems[i]=simplify(makeBracket(listItems[i]));
     }
     for(let i = 0; i<listItems.length;i++){
       varsMade.push(`${varName}[${i+1}]`)
+      console.log(listItems[i])
       valuesMade.push(simplify(String(listItems[i])))
     }
     return([varsMade,valuesMade])
@@ -232,6 +243,9 @@ function execute() {
   for(var j = 0; j<lines.length; j++){
     let listAssign = 0;
     if(lines[j].includes("&lt;--")){
+      if(manualSearch(lines[j].substring(0,lines[j].search("&lt;--")),"[")!=-1 && lines[j][lines[j].search("&lt;--")-1]=="]" && lists.includes(lines[j].substring(0,manualSearch(lines[j],"[")))){
+        lines[j]=`${makeBracket(lines[j].substring(0,manualSearch(lines[j],"&lt;--")))}${lines[j].substring(manualSearch(lines[j],"&lt;--"),lines[j].length)}`
+      }
       if(variables.includes(lines[j].substring(0,lines[j].search("&lt;--")))){
         if(lines[j][lines[j].search("&lt;--")+6]=="[" && lines[j][lines[j].length-1]=="]"){
           listAssign = 1;
@@ -304,7 +318,6 @@ function execute() {
         values=container[1];
       }
     }
-    //if(manualSearch(lines[j],"[")!=-1 && manualSearch(lines[j],"]")!=-1 && listAssign==0)
     if(lines[j].search("DISPLAY")==0 && lines[j][lines[j].length-1]==")" && lines[j][7]=="("){
       document.getElementById("output").innerHTML+=`${simplify(lines[j].substring(8,lines[j].length-1))} `;
     }
