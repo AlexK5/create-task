@@ -87,8 +87,8 @@ function execute() {
         while(randomDone==0){
           randomDone=1;
           if(code.includes("RANDOM") && code[code.search("RANDOM")+6]=="(" && manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")!=-1 && !(code.substring(0,code.search("RANDOM")).includes('"')) && !(code.substring(code.search("RANDOM")+7,code.length-1).includes('"'))){
-            let minimum = Number(code.substring(code.search("RANDOM")+7,code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(",")))
-            let maximum = Number(code.substring(code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(",")+1,code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")))
+            let minimum = Number(simplify(code.substring(code.search("RANDOM")+7,code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(","))))
+            let maximum = Number(simplify(code.substring(code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(",")+1,code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")"))))
             let num = Math.floor(Math.random()*(maximum-minimum+1)+minimum)
             code=`${code.substring(0,code.search("RANDOM"))}${num}${code.substring(code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")+1,code.length)}`
           }
@@ -122,16 +122,7 @@ function execute() {
             }
           }
         }
-        for(let list of lists){
-          let count = 0;
-          let fakes=[];
-          while(manualSearch(code,`${list}[`,count+1)!=-1){
-            count++;
-            if(code.substring(0,manualSearch(code,`${list}[`,count)).includes('"') && code.substring(manualSearch(code,`${list}[`,count)+1,code.length).includes('"')){
-              fakes.push(count);
-            }
-          }
-        }
+        code = makeBracket(code);
         for(let variable of variables){
           while(code.includes(variable)){
             if(typeof(values[variables.indexOf(variable)])=="string" && (values[variables.indexOf(variable)][0]!='"' || values[variables.indexOf(variable)][values[variables.indexOf(variable)].length]!='"')){
@@ -149,31 +140,35 @@ function execute() {
     }
     return(code);
   }
+  function doLayer(listString){
+    let rlayers = [];
+    let llayers = [];
+    let layer = 0;
+    let prevList = false;
+    for(let k = 0; k<listString.length; k++){
+      if(listString[k]=="["){
+        layer++;
+        rlayers.push(layer);
+      }
+      if(listString[k]=="]"){
+        llayers.push(layer);
+        layer--;
+      }
+    }
+    return([rlayers,llayers])
+  }
   function makeBracket(item){
     let listItems=item
-    let prevr;
-    let prevl;
     let prevList = false;
-    while((manualSearch(listItems,"[")!=-1 || manualSearch(listItems,"]")!=-1) && !(listItems[0]=='"' && listItems[listItems.length-1]=='"') && !(variables.includes(listItems))){
+    let rlayers = [];
+    let llayers = [];
+    while((manualSearch(listItems,"[")!=-1 || manualSearch(listItems,"]")!=-1) && !(listItems[0]=='"' && listItems[listItems.length-1]=='"') && !(variables.includes(listItems)) && !(getMax(rlayers)==0 && getMax(llayers)==0)){
       if(prevList==false){
         listString=listItems;
         layer=0;
-        llayers=[];
-        rlayers=[];
-        for(let k = 0; k<listString.length; k++){
-          if(listString[k]=="["){
-            layer++;
-            rlayers.push(layer);
-          }
-          if(listString[k]=="]"){
-            llayers.push(layer);
-            layer--;
-          }
-        }
+        rlayers=doLayer(listString)[0];
+        llayers=doLayer(listString)[1];
       }
-      console.log(rlayers)
-      console.log(llayers)
-      console.log(listItems)
       let rmax = rlayers.indexOf(getMax(rlayers))+1;
       let lmax = llayers.indexOf(getMax(llayers))+1;
       prevList=listItems
@@ -185,8 +180,6 @@ function execute() {
       }
       rlayers[rmax-1]=0;
       llayers[lmax-1]=0;
-      prevr = rmax;
-      prevl = lmax;
     }
     return(listItems)
   }
@@ -198,8 +191,6 @@ function execute() {
     let varsMade=[];
     let valuesMade=[];
     let layer = 0;
-    let rlayers = [];
-    let llayers = [];
     for(let i = 0; i<listString.length;i++){
       if(listString[i]=='"'){
         quoteCount++;
@@ -222,7 +213,6 @@ function execute() {
     }
     for(let i = 0; i<listItems.length;i++){
       varsMade.push(`${varName}[${i+1}]`)
-      console.log(listItems[i])
       valuesMade.push(simplify(String(listItems[i])))
     }
     return([varsMade,valuesMade])
@@ -283,6 +273,7 @@ function execute() {
           }
         }else{
           if(lists.includes(lines[j].substring(0,lines[j].search("&lt;--")))){
+            values[variables.indexOf(lines[j].substring(0,lines[j].search("&lt;--")))]=simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length));
             lists.splice(lists.indexOf(lines[j].substring(0,lines[j].search("&lt;--"))),1)
             let i = 0;
             while(i<variables.length){
@@ -294,7 +285,6 @@ function execute() {
               }
             }
           }
-          values[variables.indexOf(lines[j].substring(0,lines[j].search("&lt;--")))]=simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length));
         }
       }else{
         if(lines[j][lines[j].search("&lt;--")+6]=="[" && lines[j][lines[j].length-1]=="]"){
