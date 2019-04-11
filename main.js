@@ -77,7 +77,7 @@ function execute() {
     let done = 0;
     iters=0;
     while(done==0 && iters<100){
-      //iters++;
+      iters++;
       done=1;
       try{
         code = eval(code);
@@ -110,6 +110,22 @@ function execute() {
             inputDone=0;
           }
         }
+        lengthDone=0;
+        while(lengthDone==0){
+          lengthDone=1;
+          if(code.includes("LENGTH") && code[code.search("LENGTH")+6]=="(" && manualSearch(code.substring(code.search("LENGTH")+7,code.length),")")!=-1 && !(code.substring(0,code.search("LENGTH")).includes('"')) && !(code.substring(code.search("LENGTH")+7,code.length-1).includes('"'))){
+            let list = code.substring(code.search("LENGTH")+7,code.search("LENGTH")+7+manualSearch(code.substring(code.search("LENGTH")+7,code.length),")"))
+            let count = 1;
+            while(variables.includes(`${list}[${count}]`)){
+              count++;
+            }
+            count--;
+            code=`${code.substring(0,code.search("LENGTH"))}${count}${code.substring(code.search("LENGTH")+7+manualSearch(code.substring(code.search("LENGTH")+7,code.length),")")+1,code.length)}`
+          }
+          if(code.includes("LENGTH") && code[code.search("LENGTH")+6]=="(" && manualSearch(code.substring(code.search("LENGTH")+7,code.length),")")!=-1 && !(code.substring(0,code.search("LENGTH")).includes('"')) && !(code.substring(code.search("LENGTH")+7,code.length-1).includes('"'))){
+            lengthDone=0;
+          }
+        }
         if(code.includes("MOD")){
           modDone=0;
           while(modDone==0){
@@ -127,6 +143,9 @@ function execute() {
           while(code.includes(variable)){
             if(typeof(values[variables.indexOf(variable)])=="string" && (values[variables.indexOf(variable)][0]!='"' || values[variables.indexOf(variable)][values[variables.indexOf(variable)].length]!='"')){
               code = `${code.substring(0,manualSearch(code,variable))}"${values[variables.indexOf(variable)]}"${code.substring(code.search(variable)+variable.length,code.length)}`
+              if(code[code.length-1]=="]" && code[code.length-2]=='"' && code[0]=='"'){
+                code=code.substring(0,code.length-1);
+              }
             }else{
               code = `${code.substring(0,manualSearch(code,variable))}${values[variables.indexOf(variable)]}${code.substring(manualSearch(code,variable)+variable.length,code.length)}`
             }
@@ -310,6 +329,30 @@ function execute() {
     }
     if(lines[j].search("DISPLAY")==0 && lines[j][lines[j].length-1]==")" && lines[j][7]=="("){
       document.getElementById("output").innerHTML+=`${simplify(lines[j].substring(8,lines[j].length-1))} `;
+    }
+    if(lines[j].search("APPEND")==0 && lines[j][lines[j].length-1]==")" && lines[j][6]=="("){
+      let quoteCount = 0;
+      let commaCount;
+      for(let i = 0; i<lines[j].length;i++){
+        if(lines[j][i]=='"'){
+          quoteCount++;
+        }
+        if(lines[j][i]=="," && quoteCount%2==0){
+          commaCount=i;
+        }
+      }
+      let list = lines[j].substring(7,commaCount);
+      let value = simplify(lines[j].substring(commaCount+1,lines[j].length-1));
+      let count = 1;
+      while(variables.includes(`${list}[${count}]`)){
+        count++;
+      }
+      count--;
+      variables.push(`${list}[${count+1}]`);
+      values.push(value)
+      let container=lengthSort(variables,values);
+      variables=container[0];
+      values=container[1];
     }
     for(let list of lists){
       let items = [];
