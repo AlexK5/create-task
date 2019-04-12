@@ -345,6 +345,10 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
       varsMade.push(`${varName}[${i+1}]`)
       valuesMade.push(simplify(String(listItems[i])))
     }
+    if(listItems[0]==undefined && listItems.length==1){
+      varsMade=[];
+      valuesMade=[];
+    }
     return([varsMade,valuesMade])
   }
   function check(statement){
