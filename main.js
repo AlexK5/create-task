@@ -1,8 +1,39 @@
-function execute() {
-  document.getElementById("output").innerHTML="";
-  let variables = [];
-  let values = [];
-  let lists = [];
+function execute(pseudocode,vars,vals,stuff,funcs,params) {
+  if(!(pseudocode)){
+    document.getElementById("output").innerHTML="";
+  }
+  let variables;
+  let values;
+  let lists;
+  let procedures;
+  let rvalue;
+  let parameters;
+  if(vars){
+    variables=vars;
+  }else{
+    variables=[];
+  }
+  if(vals){
+    values=vals;
+  }else{
+    values=[];
+  }
+  if(stuff){
+    lists=stuff;
+  }else{
+    lists=[];
+  }
+  if(funcs){
+    procedures=funcs;
+  }else{
+    procedures=[];
+  }
+  if(params){
+    parameters=params;
+  }else{
+    parameters=[];
+  }
+  let lastIf = true;
   function eliminateSpaces(row){
     let line = row;
     let i = 0;
@@ -151,6 +182,86 @@ function execute() {
             }
           }
         }
+        for(let procedure of procedures){
+          while(code.includes(procedure)){
+            let layer = 1;
+            let index = manualSearch(code,procedure)+procedure.length;
+            let quoteCount=0;
+            while(layer>0){
+              index++;
+              if(code[index]=='"'){
+                quoteCount++;
+              }
+              if(code[index]=='('){
+                layer++;
+              }
+              if(code[index]==')'){
+                layer--;
+              }
+            }
+            let k;
+              for(let line = 0; line<lines.length; line++){
+                if(manualSearch(lines[line],`PROCEDURE${procedure}(`)==0){
+                  k=line+1;
+                }
+              }
+              let program = "";
+              let braceCount=1;
+              let char = lines[k][0];
+              let i = 0;
+              while(braceCount>0 && lines[k+1]){
+                program+=String(char);
+                if(char=="{"){
+                  braceCount++;
+                }
+                if(char=="}"){
+                  braceCount--;
+                }
+                i++;
+                if(i==lines[k].length){
+                  program+="\n";
+                  k++;
+                  i=0;
+                }
+                char=lines[k][i];
+              }
+              while(program[program.length-1]=="\n"){
+                program=program.substring(0,program.length-1)
+              }
+              program=program.substring(0,program.length-1);
+              let items = code.substring(manualSearch(code,procedure)+1+procedure.length,index);
+              let bucket = [""];
+              for(let l = 0; l<items.length; l++){
+                if(items[l]==","){
+                  bucket.push("");
+                }else{
+                  bucket[bucket.length-1]+=String(items[l]);
+                }
+              }
+              let newFuncs = parameters[procedures.indexOf(procedure)];
+              for(let para = 0; para<newFuncs.length; para++){
+                variables.push(newFuncs[para]);
+                if(isNaN(bucket[para])==false){
+                  bucket[para]=Number(bucket[para])
+                }
+                values.push(bucket[para]);
+              }
+              let container=lengthSort(variables,values);
+              variables=container[0];
+              values=container[1];
+              let answer = execute(program,variables,values,lists,procedures,parameters);
+              variables=answer[0];
+              values=answer[1];
+              lists=answer[2];
+              procedures=answer[3];
+              parameters=answer[4];
+              for(let thing of newFuncs){
+                values.splice(variables.indexOf(thing),1)
+                variables.splice(variables.indexOf(thing),1);
+              }
+            code = `${code.substring(0,manualSearch(code,procedure))}${answer[5]}${code.substring(index+1,code.length)}`
+         }
+        }
         if(code[0]=='"' && code[code.length-1]=='"'){
           done=1;
           code=code.substring(1,code.length-1);
@@ -236,7 +347,127 @@ function execute() {
     }
     return([varsMade,valuesMade])
   }
-  let p=document.getElementById("code").innerHTML;
+  function check(statement){
+    let code = statement;
+    let conditions = [];
+    let lastCon=0;
+    let quoteCount=0;
+    let layer = 0;
+    let operators = [];
+    let opList=["!=", "&lt;=", "&gt;=", "&lt;", "&gt;", "="];
+    for(let i = 0; i<code.length; i++){
+      if(code[i]=='"'){
+        quoteCount++;
+      }
+      if(code[i]=="("){
+        layer++;
+      }
+      if(code[i]==")"){
+        layer--;
+      }
+      if(code[i]=="A" && code[i+1]=="N" && code[i+2]=="D" && layer==0 && quoteCount%2==0){
+        conditions.push(code.substring(lastCon,i));
+        operators.push("AND");
+        lastCon=i+3;
+      }
+      if(code[i]=="O" && code[i+1]=="R" && layer==0 && quoteCount%2==0){
+        conditions.push(code.substring(lastCon,i));
+        operators.push("OR");
+        lastCon=i+2;
+      }
+    }
+    conditions.push(code.substring(lastCon,code.length));
+    for(let i = 0; i<conditions.length; i++){
+      if(conditions[i][0]=="(" && conditions[i][conditions[i].length-1]==")"){
+        conditions[i]=check(conditions[i].substring(1,conditions[i].length-1));
+      }else if(manualSearch(conditions[i],"NOT")==0){
+        conditions[i]=!(check(conditions[i].substring(3,conditions[i].length)));
+      }else{
+        if(conditions[i].includes("=") || conditions[i].includes("&lt;") || conditions[i].includes("&gt;")){
+          quoteCount=0;
+          let rop;
+          let opindex = conditions[i].length;
+          for(let op of opList){
+            if(manualSearch(conditions[i],op)<opindex && manualSearch(conditions[i],op)>-1){
+              rop = op;
+              opindex = manualSearch(conditions[i],op);
+            }
+          }
+          let partOne=conditions[i].substring(0,opindex);
+          let partTwo=conditions[i].substring(opindex+rop.length,conditions[i].length);
+          if(rop=="="){
+            if(simplify(partOne)==simplify(partTwo)){
+              conditions[i]=true;
+            }else{
+              conditions[i]=false;
+            }
+          }else if(rop=="!="){
+            if(simplify(partOne)==simplify(partTwo)){
+              conditions[i]=false;
+            }else{
+              conditions[i]=true;
+            }
+          }else if(rop=="&lt;="){
+            if(simplify(partOne)<=simplify(partTwo)){
+              conditions[i]=true;
+            }else{
+              conditions[i]=false;
+            }
+          }else if(rop=="&gt;="){
+            if(simplify(partOne)>=simplify(partTwo)){
+              conditions[i]=true;
+            }else{
+              conditions[i]=false;
+            }
+          }else if(rop=="&lt;"){
+            if(simplify(partOne)<simplify(partTwo)){
+              conditions[i]=true;
+            }else{
+              conditions[i]=false;
+            }
+          }else if(rop=="&gt;"){
+            if(simplify(partOne)>simplify(partTwo)){
+              conditions[i]=true;
+            }else{
+              conditions[i]=false;
+            }
+          }
+        }else{
+          if(conditions[i]!=false){
+            conditions[i]=true;
+          }
+        }
+      }
+    }
+    while(conditions.length>1){
+      if(operators[0]=="OR"){
+        if(conditions[0] || conditions[1]){
+          conditions[1]=true;
+        }else{
+          conditions[1]=false;
+        }
+        conditions.shift();
+      }else if(operators[0]=="AND"){
+        if(conditions[0] && conditions[1]){
+          conditions[1]=true;
+        }else{
+          conditions[1]=false;
+        }
+        conditions.shift();
+      }
+    }
+    if(conditions[0]){
+      return(true);
+    }else{
+      return(false);
+    }
+  }
+  let p;
+  if(pseudocode==undefined){
+    p=document.getElementById("code").innerHTML;
+  }else{
+    p=pseudocode;
+  }
   let lines=[];
   var j=0;
   for(let i = 0; i<p.length; i++){
@@ -249,7 +480,8 @@ function execute() {
   for(var j = 0; j<lines.length; j++){
     lines[j] = eliminateSpaces(lines[j]);
   }
-  for(var j = 0; j<lines.length; j++){
+  j = 0;
+  while(j<lines.length){
     let listAssign = 0;
     if(lines[j].includes("&lt;--")){
       if(manualSearch(lines[j].substring(0,lines[j].search("&lt;--")),"[")!=-1 && lines[j][lines[j].search("&lt;--")-1]=="]" && lists.includes(lines[j].substring(0,manualSearch(lines[j],"[")))){
@@ -291,8 +523,8 @@ function execute() {
             lists.push(listName);
           }
         }else{
+          values[variables.indexOf(lines[j].substring(0,lines[j].search("&lt;--")))]=simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length));
           if(lists.includes(lines[j].substring(0,lines[j].search("&lt;--")))){
-            values[variables.indexOf(lines[j].substring(0,lines[j].search("&lt;--")))]=simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length));
             lists.splice(lists.indexOf(lines[j].substring(0,lines[j].search("&lt;--"))),1)
             let i = 0;
             while(i<variables.length){
@@ -327,8 +559,227 @@ function execute() {
         values=container[1];
       }
     }
+    let ifresolved=0;
+    while((lines[j].search("REPEAT")==0 && lines[j].search("TIMES{")==lines[j].length-6) || (lines[j].search("FOREACH")==0 && lines[j].includes("IN") && lines[j].search("{")==lines[j].length-1) || (ifresolved==0 && manualSearch(lines[j],"IF(")==0 && manualSearch(lines[j], "){")==lines[j].length-2) || (ifresolved==0 && lines[j]=="ELSE{") || (manualSearch(lines[j],"REPEATUNTIL(")==0 && manualSearch(lines[j],"){")==lines[j].length-2) || (manualSearch(lines[j],"PROCEDURE")==0 && manualSearch(lines[j],"(")!=-1 && manualSearch(lines[j], "){")==lines[j].length-2)){
+      if(lines[j].search("REPEAT")==0 && lines[j].search("TIMES{")==lines[j].length-6){
+        let n = simplify(lines[j].substring(6,lines[j].length-6));
+        let code = "";
+        let braceCount=1;
+        let char = lines[j+1][0];
+        let i = 0;
+        let k = j+1
+        while(braceCount>0 && lines[k+1]){
+          code+=String(char);
+          if(char=="{"){
+            braceCount++;
+          }
+          if(char=="}"){
+            braceCount--;
+          }
+          i++;
+          if(i==lines[k].length){
+            code+="\n";
+            k++;
+            i=0;
+          }
+          char=lines[k][i];
+        }
+        code=code.substring(0,code.length-1);
+        for(let i = 0; i<n; i++){
+          let container=lengthSort(variables,values);
+          variables=container[0];
+          values=container[1];
+          let newValues = execute(code,variables,values,lists,proceures);
+          variables=newValues[0];
+          values=newValues[1];
+          lists=newValues[2];
+          procedures=newValues[3];
+          parameters=newValues[4];
+        }
+        j=k
+      }
+      if(lines[j].search("FOREACH")==0 && lines[j].includes("IN") && lines[j].search("{")==lines[j].length-1){
+        let counter = lines[j].substring(7,lines[j].search("IN"));
+        let listName = lines[j].substring(lines[j].search("IN")+2,lines[j].length-1);
+        let code = "";
+        let braceCount=1;
+        let char = lines[j+1][0];
+        let i = 0;
+        let k = j+1
+        let count = 1;
+        while(variables.indexOf(`${listName}[${count}]`)!=-1){
+          count++;
+        }
+        count--;
+        while(braceCount>0 && lines[k+1]){
+          code+=String(char);
+          if(char=="{"){
+            braceCount++;
+          }
+          if(char=="}"){
+            braceCount--;
+          }
+          i++;
+          if(i==lines[k].length){
+            code+="\n";
+            k++;
+            i=0;
+          }
+          char=lines[k][i];
+        }
+        code=code.substring(0,code.length-1);
+        for(let i = 0; i<count; i++){
+          if(variables.includes(counter)){
+            values[variables.indexOf(counter)]=values[variables.indexOf(`${listName}[${i+1}]`)];
+          }else{
+            variables.push(counter);
+            values.push(values[variables.indexOf(`${listName}[${i+1}]`)]);
+          }
+          let container=lengthSort(variables,values);
+          variables=container[0];
+          values=container[1];
+          let newValues = execute(code,variables,values,lists,procedures,parameters);
+          variables=newValues[0];
+          values=newValues[1];
+          lists=newValues[2];
+          procedures=newValues[3];
+          parameters=newValues[4];
+        }
+        j=k;
+      }
+      if(manualSearch(lines[j],"REPEATUNTIL(")==0 && manualSearch(lines[j],"){")==lines[j].length-2){
+        let condition = lines[j].substring(12,lines[j].length-2);
+        let code = "";
+        let braceCount=1;
+        let char = lines[j+1][0];
+        let i = 0;
+        let k = j+1
+        while(braceCount>0 && lines[k+1]){
+          code+=String(char);
+          if(char=="{"){
+            braceCount++;
+          }
+          if(char=="}"){
+            braceCount--;
+          }
+          i++;
+          if(i==lines[k].length){
+            code+="\n";
+            k++;
+            i=0;
+          }
+          char=lines[k][i];
+        }
+        code=code.substring(0,code.length-1);
+        while(!(check(condition))){
+          let container=lengthSort(variables,values);
+          variables=container[0];
+          values=container[1];
+          let newValues = execute(code,variables,values,lists,procedures,parameters);
+          variables=newValues[0];
+          values=newValues[1];
+          lists=newValues[2];
+          procedures=newValues[3];
+          parameters=newValues[4];
+        }
+        j=k
+      }
+      if(manualSearch(lines[j],"IF(")==0 && manualSearch(lines[j], "){")==lines[j].length-2){
+        let toTest = lines[j].substring(3,lines[j].length-2);
+        let braceCount=1;
+        let k = j+1;
+        let char = lines[j+1][0];
+        let i = 0;
+        while(braceCount>0 && lines[k+1]){
+          if(char=="{"){
+            braceCount++;
+          }
+          if(char=="}"){
+            braceCount--;
+          }
+          i++;
+          if(i==lines[k].length){
+            k++;
+            i=0;
+          }
+          char=lines[k][i];
+        }
+        if(check(toTest)==false){
+          j=k;
+          lastIf=true;
+        }else{
+          ifresolved=1;
+          lastIf=false;
+        }
+      }
+      if(lines[j]=="ELSE{"){
+        let braceCount=1;
+        let k = j+1;
+        let char = lines[j+1][0];
+        let i = 0;
+        while(braceCount>0 && lines[k+1]){
+          if(char=="{"){
+            braceCount++;
+          }
+          if(char=="}"){
+            braceCount--;
+          }
+          i++;
+          if(i==lines[k].length){
+            k++;
+            i=0;
+          }
+          char=lines[k][i];
+        }
+        if(!(lastIf)){
+          j=k;
+        }else{
+          ifresolved=1;
+        }
+      }
+      if(manualSearch(lines[j],"PROCEDURE")==0 && manualSearch(lines[j],"(")!=-1 && manualSearch(lines[j], "){")==lines[j].length-2){
+        procedures.push(lines[j].substring(9,manualSearch(lines[j],"(")));
+        let braceCount=1;
+        let k = j+1;
+        let char = lines[j+1][0];
+        let i = 0;
+        while(braceCount>0 && lines[k+1]){
+          if(char=="{"){
+            braceCount++;
+          }
+          if(char=="}"){
+            braceCount--;
+          }
+          i++;
+          if(i==lines[k].length){
+            k++;
+            i=0;
+          }
+          char=lines[k][i];
+        }
+        let items = lines[j].substring(manualSearch(lines[j],"(")+1,lines[j].length-2);
+        let bucket = [""];
+        for(let l = 0; l<items.length; l++){
+          if(items[l]==","){
+            bucket.push("");
+          }else{
+            bucket[bucket.length-1]+=String(items[l]);
+          }
+        }
+        if(bucket[0]==""){
+          parameters.push([])
+        }else{
+          parameters.push(bucket)
+        }
+        j=k;
+      }
+    }
     if(lines[j].search("DISPLAY")==0 && lines[j][lines[j].length-1]==")" && lines[j][7]=="("){
-      document.getElementById("output").innerHTML+=`${simplify(lines[j].substring(8,lines[j].length-1))} `;
+      let tbd = `${simplify(lines[j].substring(8,lines[j].length-1))} `;
+      if(lists.includes(lines[j].substring(8,lines[j].length-1)) && tbd[0]=="[" && tbd[1]==","){
+        tbd=`[${tbd.substring(2,tbd.length)}`;
+      }
+      document.getElementById("output").innerHTML+=tbd;
     }
     if(lines[j].search("APPEND")==0 && lines[j][lines[j].length-1]==")" && lines[j][6]=="("){
       let quoteCount = 0;
@@ -354,6 +805,144 @@ function execute() {
       variables=container[0];
       values=container[1];
     }
+    if(lines[j].search("REMOVE")==0 && lines[j][lines[j].length-1]==")" && lines[j][6]=="("){
+      let quoteCount = 0;
+      let commaCount;
+      for(let i = 0; i<lines[j].length;i++){
+        if(lines[j][i]=='"'){
+          quoteCount++;
+        }
+        if(lines[j][i]=="," && quoteCount%2==0){
+          commaCount=i;
+        }
+      }
+      let list = lines[j].substring(7,commaCount);
+      let index = simplify(lines[j].substring(commaCount+1,lines[j].length-1));
+      let count = 1;
+      while(variables.includes(`${list}[${count}]`)){
+        count++;
+      }
+      count--;
+      values.splice(variables.indexOf(`${list}[${index}]`),1);
+      variables.splice(variables.indexOf(`${list}[${index}]`),1);
+      for(let i = index+1; i<count+1; i++){
+        variables[variables.indexOf(`${list}[${i}]`)]=`${list}[${i-1}]`;
+      }
+      let container=lengthSort(variables,values);
+      variables=container[0];
+      values=container[1];
+    }
+    if(lines[j].search("INSERT")==0 && lines[j][lines[j].length-1]==")" && lines[j][6]=="("){
+      let quoteCount = 0;
+      let commaCount = []
+      for(let i = 0; i<lines[j].length;i++){
+        if(lines[j][i]=='"'){
+          quoteCount++;
+        }
+        if(lines[j][i]=="," && quoteCount%2==0){
+          commaCount.push(i);
+        }
+      }
+      let list = lines[j].substring(7,commaCount[0]);
+      let index = simplify(lines[j].substring(commaCount[0]+1,commaCount[1]));
+      let value = simplify(lines[j].substring(commaCount[1]+1,lines[j].length-1));
+      let count = 1;
+      while(variables.includes(`${list}[${count}]`)){
+        count++;
+      }
+      count--;
+      for(let i = count; i>=index; i--){
+        variables[variables.indexOf(`${list}[${i}]`)]=`${list}[${i+1}]`;
+      }
+      values.push(value)
+      variables.push(`${list}[${index}]`)
+      let container=lengthSort(variables,values);
+      variables=container[0];
+      values=container[1];
+    }
+    if(procedures.includes(lines[j].substring(0,manualSearch(lines[j],"(")))){
+      let layer = 1;
+      let procedure=lines[j].substring(0,manualSearch(lines[j],"("));
+      let index = procedure.length;
+      let quoteCount=0;
+      while(layer>0){
+        index++;
+        if(lines[j][index]=='"'){
+          quoteCount++;
+        }
+        if(lines[j][index]=='('){
+          layer++;
+        }
+        if(lines[j][index]==')'){
+          layer--;
+        }
+      }
+      let k;
+        for(let line = 0; line<lines.length; line++){
+          if(manualSearch(lines[line],`PROCEDURE${procedure}(`)==0){
+            k=line+1;
+          }
+        }
+        let program = "";
+        let braceCount=1;
+        let char = lines[k][0];
+        let i = 0;
+        while(braceCount>0 && lines[k+1]){
+          program+=String(char);
+          if(char=="{"){
+            braceCount++;
+          }
+          if(char=="}"){
+            braceCount--;
+          }
+          i++;
+          if(i==lines[k].length){
+            program+="\n";
+            k++;
+            i=0;
+          }
+          char=lines[k][i];
+        }
+        while(program[program.length-1]=="\n"){
+          program=program.substring(0,program.length-1)
+        }
+        program=program.substring(0,program.length-1);
+        let items = lines[j].substring(manualSearch(lines[j],procedure)+1+procedure.length,index);
+        let bucket = [""];
+        for(let l = 0; l<items.length; l++){
+          if(items[l]==","){
+            bucket.push("");
+          }else{
+            bucket[bucket.length-1]+=String(items[l]);
+          }
+        }
+        let newFuncs = parameters[procedures.indexOf(procedure)];
+        for(let para = 0; para<newFuncs.length; para++){
+          variables.push(newFuncs[para]);
+          if(isNaN(bucket[para])==false){
+            bucket[para]=Number(bucket[para])
+          }
+          values.push(bucket[para]);
+        }
+        let container=lengthSort(variables,values);
+        variables=container[0];
+        values=container[1];
+        let answer = execute(program,variables,values,lists,procedures,parameters);
+        variables=answer[0];
+        values=answer[1];
+        lists=answer[2];
+        procedures=answer[3];
+        parameters=answer[4];
+        for(let thing of newFuncs){
+          values.splice(variables.indexOf(thing),1)
+          variables.splice(variables.indexOf(thing),1);
+        }
+    }
+    if(lines[j].search("RETURN")==0 && lines[j][lines[j].length-1]==")" && lines[j][6]=="("){
+      if(rvalue==undefined){
+        rvalue=simplify(lines[j].substring(7,lines[j].length-1))
+      }
+    }
     for(let list of lists){
       let items = [];
       let included = 1;
@@ -368,8 +957,7 @@ function execute() {
       }
       values[variables.indexOf(list)]=`[${items}]`
     }
+    j++;
   }
-  // console.log(variables)
-  // console.log(values)
-  // console.log(lists)
+  return([variables,values,lists,procedures,parameters,rvalue])
 }
