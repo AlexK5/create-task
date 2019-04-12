@@ -593,14 +593,17 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
           let container=lengthSort(variables,values);
           variables=container[0];
           values=container[1];
-          let newValues = execute(code,variables,values,lists,proceures);
+          let newValues = execute(code,variables,values,lists,procedures);
           variables=newValues[0];
           values=newValues[1];
           lists=newValues[2];
           procedures=newValues[3];
           parameters=newValues[4];
         }
-        j=k
+        j=k-1
+        if(!(lines[k+1])){
+          j++
+        }
       }
       if(lines[j].search("FOREACH")==0 && lines[j].includes("IN") && lines[j].search("{")==lines[j].length-1){
         let counter = lines[j].substring(7,lines[j].search("IN"));
@@ -649,7 +652,10 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
           procedures=newValues[3];
           parameters=newValues[4];
         }
-        j=k;
+        j=k-1;
+        if(!(lines[k+1])){
+          j++
+        }
       }
       if(manualSearch(lines[j],"REPEATUNTIL(")==0 && manualSearch(lines[j],"){")==lines[j].length-2){
         let condition = lines[j].substring(12,lines[j].length-2);
@@ -686,7 +692,10 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
           procedures=newValues[3];
           parameters=newValues[4];
         }
-        j=k
+        j=k-1
+        if(!(lines[k+1])){
+          j++
+        }
       }
       if(manualSearch(lines[j],"IF(")==0 && manualSearch(lines[j], "){")==lines[j].length-2){
         let toTest = lines[j].substring(3,lines[j].length-2);
@@ -709,7 +718,10 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
           char=lines[k][i];
         }
         if(check(toTest)==false){
-          j=k;
+          j=k-1;
+          if(!(lines[k+1])){
+            j++
+          }
           lastIf=true;
         }else{
           ifresolved=1;
@@ -736,7 +748,10 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
           char=lines[k][i];
         }
         if(!(lastIf)){
-          j=k;
+          j=k-1
+          if(!(lines[k+1])){
+            j++
+          }
         }else{
           ifresolved=1;
         }
@@ -775,7 +790,10 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
         }else{
           parameters.push(bucket)
         }
-        j=k;
+        j=k-1;
+        if(!(lines[k+1])){
+          j++
+        }
       }
     }
     if(lines[j].search("DISPLAY")==0 && lines[j][lines[j].length-1]==")" && lines[j][7]=="("){
