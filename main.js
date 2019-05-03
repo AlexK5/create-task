@@ -119,9 +119,21 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
           randomDone=1;
           if(code.includes("RANDOM") && code[code.search("RANDOM")+6]=="(" && manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")!=-1 && !(code.substring(0,code.search("RANDOM")).includes('"')) && !(code.substring(code.search("RANDOM")+7,code.length-1).includes('"'))){
             let minimum = Number(simplify(code.substring(code.search("RANDOM")+7,code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(","))))
-            let maximum = Number(simplify(code.substring(code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(",")+1,code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")"))))
+            let parenthesesCount=1;
+            let m = code.search("RANDOM")+7;
+            while(parenthesesCount>0){
+              if(code[m]=="("){
+                parenthesesCount++;
+              }
+              if(code[m]==")"){
+                parenthesesCount--;
+              }
+              m++;
+            }
+            m--;
+            let maximum = Number(simplify(code.substring(code.search("RANDOM")+7+code.substring(code.search("RANDOM")+7,code.length).search(",")+1,m)))
             let num = Math.floor(Math.random()*(maximum-minimum+1)+minimum)
-            code=`${code.substring(0,code.search("RANDOM"))}${num}${code.substring(code.search("RANDOM")+7+manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")+1,code.length)}`
+            code=`${code.substring(0,code.search("RANDOM"))}${num}${code.substring(m+1,code.length)}`
           }
           if(code.includes("RANDOM") && code[code.search("RANDOM")+6]=="(" && manualSearch(code.substring(code.search("RANDOM")+7,code.length),")")!=-1 && !(code.substring(0,code.search("RANDOM")).includes('"')) && !(code.substring(code.search("RANDOM")+7,code.length-1).includes('"'))){
             randomDone=0;
