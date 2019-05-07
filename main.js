@@ -563,12 +563,14 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
           for(let item of madeList[1]){
             values.push(item)
           }
+          let tmparg = simplify(`"${lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length)}"`);
+          values.push(tmparg);
           variables.push(lines[j].substring(0,lines[j].search("&lt;--")));
-          values.push(simplify(`"${lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length)}"`));
           lists.push(lines[j].substring(0,lines[j].search("&lt;--")));
         }else{
+          let tmparg = simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length))
+          values.push(tmparg);
           variables.push(lines[j].substring(0,lines[j].search("&lt;--")));
-          values.push(simplify(lines[j].substring(lines[j].search("&lt;--")+6,lines[j].length)));
         }
         let container=lengthSort(variables,values);
         variables=container[0];
@@ -809,11 +811,31 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
       }
     }
     if(lines[j].search("DISPLAY")==0 && lines[j][lines[j].length-1]==")" && lines[j][7]=="("){
-      let tbd = `${simplify(lines[j].substring(8,lines[j].length-1))} `;
-      if(lists.includes(lines[j].substring(8,lines[j].length-1)) && tbd[0]=="[" && tbd[1]==","){
-        tbd=`[${tbd.substring(2,tbd.length)}`;
+      let quoteCount=0;
+      let displayCode = `${simplify(lines[j].substring(8,lines[j].length-1))} `;
+      let commas = [-1];
+      for(let i = 0; i<displayCode.length; i++){
+        if(displayCode[i]=='"'){
+          quoteCount++;
+        }
+        if(displayCode[i]==","){
+          commas.push(i)
+        }
       }
-      document.getElementById("output").innerHTML+=tbd;
+      commas.push(displayCode.length)
+      console.log(displayCode)
+      let tbd = [];
+      for(let i=0; i<commas.length-1; i++){
+        tbd.push(displayCode.substring(commas[i]+1,commas[i+1]));
+      }
+      for(let i=0; i<tbd.length; i++){
+        if(lists.includes(lines[j].substring(8,lines[j].length-1)) && tbd[i][0]=="[" && tbd[i][1]==","){
+          tbd[i]=`[${tbd[i].substring(2,tbd[i].length)}`;
+        }
+      }
+      for(let i=0; i<tbd.length; i++){
+        document.getElementById("output").innerHTML+=`${tbd[i]} `;
+      }
     }
     if(lines[j].search("APPEND")==0 && lines[j][lines[j].length-1]==")" && lines[j][6]=="("){
       let quoteCount = 0;
