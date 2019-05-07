@@ -812,7 +812,7 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
     }
     if(lines[j].search("DISPLAY")==0 && lines[j][lines[j].length-1]==")" && lines[j][7]=="("){
       let quoteCount=0;
-      let displayCode = `${simplify(lines[j].substring(8,lines[j].length-1))} `;
+      let displayCode = `${lines[j].substring(8,lines[j].length-1)} `;
       let commas = [-1];
       for(let i = 0; i<displayCode.length; i++){
         if(displayCode[i]=='"'){
@@ -823,7 +823,6 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
         }
       }
       commas.push(displayCode.length)
-      console.log(displayCode)
       let tbd = [];
       for(let i=0; i<commas.length-1; i++){
         tbd.push(displayCode.substring(commas[i]+1,commas[i+1]));
@@ -834,7 +833,7 @@ function execute(pseudocode,vars,vals,stuff,funcs,params) {
         }
       }
       for(let i=0; i<tbd.length; i++){
-        document.getElementById("output").innerHTML+=`${tbd[i]} `;
+        document.getElementById("output").innerHTML+=`${simplify(tbd[i])} `;
       }
     }
     if(lines[j].search("APPEND")==0 && lines[j][lines[j].length-1]==")" && lines[j][6]=="("){
